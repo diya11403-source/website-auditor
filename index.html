@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Website Auditor Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
+
+    <div class="max-w-2xl mx-auto py-16 px-4">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-extrabold tracking-tight mb-3">The Website Auditor</h1>
+            <p class="text-slate-400">Scan any business URL against critical 2026 AI and web conversion pillars.</p>
+        </header>
+
+        <div id="input-card" class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl mb-6">
+            <label class="block text-sm font-semibold mb-2 text-slate-300">Enter Business Website Address</label>
+            <div class="flex gap-2">
+                <input id="targetUrl" type="url" placeholder="https://example.com" class="bg-slate-950 border border-slate-700 rounded p-3 flex-1 text-white font-medium outline-none focus:border-indigo-500" />
+                <button onclick="runAudit()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded tracking-wide transition-all">Scan Website</button>
+            </div>
+            <p id="loading-txt" class="hidden text-indigo-400 text-sm mt-3 animate-pulse">🕵️‍♂️ Connecting to site, downloading code and running deep analysis...</p>
+        </div>
+
+        <div id="lead-gate" class="hidden bg-indigo-950 border border-indigo-800 p-8 rounded-xl text-center shadow-2xl mb-6">
+            <span class="text-3xl">🎉</span>
+            <h3 class="text-2xl font-bold mt-2 mb-1 text-indigo-200">Analysis Complete!</h3>
+            <p class="text-slate-400 mb-6 text-sm">We successfully mapped out security parameters, conversion metrics, and AI search visibilities. Enter your email to unlock your instant report card dashboard.</p>
+            <div class="flex gap-2 max-w-md mx-auto">
+                <input id="leadEmail" type="email" placeholder="ceo@business.com" class="bg-slate-950 border border-slate-700 rounded p-3 flex-1 text-white" />
+                <button onclick="unlockDashboard()" class="bg-white text-slate-950 font-extrabold px-6 py-3 rounded hover:bg-slate-100 transition-all">Unlock Results</button>
+            </div>
+        </div>
+
+        <div id="report-dashboard" class="hidden space-y-4">
+            <h2 class="text-2xl font-black text-white border-b border-slate-700 pb-2 mb-4">5-Pillar Executive Summary</h2>
+            <div id="dashboard-results-list" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let temporaryScanData = null;
+        let verifiedScannedUrl = '';
+
+        // PART B TRACKING: Fires automatically the millisecond a user lands on your site
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch(`${API_URL}/api/track-visit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userAgent: navigator.userAgent,
+                    referrer: document.referrer || "Direct Link Access"
+                })
+            });
+        });
+
+        async function runAudit() {
+            verifiedScannedUrl = document.getElementById('targetUrl').value;
+            if(!verifiedScannedUrl.startsWith('http')) return alert('Please input a full URL starting with http:// or https://');
+
+            document.getElementById('loading-txt').classList.remove('hidden');
+
+            try {
+                const response = await fetch(`${API_URL}/api/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetUrl: verifiedScannedUrl })
+                });
+                const data = await response.json();
+
+                if(data.success) {
+                    temporaryScanData = data.report;
+                    // Transition View: Hide input window, show email lead wall
+                    document.getElementById('input-card').classList.add('hidden');
+                    document.getElementById('lead-gate').classList.remove('hidden');
+                } else {
+                    alert('Error running audit: ' + data.error);
+                    document.getElementById('loading-txt').classList.add('hidden');
+                }
+            } catch (err) {
+                alert('Backend server disconnected. Ensure terminal says running on port 5000.');
+            }
+        }
+
+        async function unlockDashboard() {
+            const userEmail = document.getElementById('leadEmail').value;
+            if(!userEmail.includes('@')) return alert('Please input a valid email address.');
+
+            // Send captured email data to server -> saves to MongoDB
+            await fetch(`${API_URL}/api/save-lead`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userEmail, scannedUrl: verifiedScannedUrl })
+            });
+
+            // Transition View: Hide Lead gate, display the interactive results panel
+            document.getElementById('lead-gate').classList.add('hidden');
+            document.getElementById('report-dashboard').classList.remove('hidden');
+
+            const loopContainer = document.getElementById('dashboard-results-list');
+            loopContainer.innerHTML = ''; // Reset container HTML
+
+            // Loop through the 5 pillars returned by server script and render custom components
+            for (const [pillarKey, auditValue] of Object.entries(temporaryScanData)) {
+                const passStatus = auditValue.pass;
+                loopContainer.innerHTML += `
+                    <div class="p-5 rounded-lg bg-slate-800 border ${passStatus ? 'border-emerald-900/50 bg-emerald-950/10' : 'border-rose-900/50 bg-rose-950/10'}">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-lg font-bold capitalize text-slate-200">${pillarKey}</span>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-black ${passStatus ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+                                ${passStatus ? 'PASSED' : 'MISSING'}
+                            </span>
+                        </div>
+                        ${!passStatus ? `<p class="text-sm text-slate-400 mt-1 leading-relaxed">${auditValue.advice}</p>` : `<p class="text-sm text-emerald-500/80">Optimization verified. Site satisfies this digital metric framework.</p>`}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
