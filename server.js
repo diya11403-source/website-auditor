@@ -4,21 +4,21 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
 
-// Import the database blueprints we made in Step 4
+// Import the database blueprints 
 const Visit = require('./models/Visit');
 const Lead = require('./models/Lead');
 
 const app = express();
 app.use(express.json()); // Allows our server to read JSON data sent by the frontend
-app.use(cors());         // Stops your browser from blocking requests to this server
+app.use(cors());         // Stops browser from blocking requests to this server
 
-// Connect to your cloud MongoDB database
+// Connecting to cloud MongoDB database
 const mongoURI = "mongodb+srv://admin:Diya11403@cluster0.jr7odeo.mongodb.net/?appName=Cluster0"; 
 mongoose.connect(mongoURI)
   .then(() => console.log('🚀 Success: Connected to MongoDB Cloud!'))
   .catch(err => console.error('❌ Database connection error:', err));
 
-// ROUTE 1: Track Traffic to your own tool
+// Tracking Traffic to our tool
 app.post('/api/track-visit', async (req, res) => {
   try {
     const newVisit = new Visit({
@@ -32,22 +32,21 @@ app.post('/api/track-visit', async (req, res) => {
   }
 });
 
-// ROUTE 2: Scrape and Analyze a Business Website
+// ROUTE 2: Scraping and Analyzing a Business Website
 app.post('/api/scan', async (req, res) => {
   try {
     const { targetUrl } = req.body;
 
-    // 1. Download the raw HTML code of the business website
+    // 1. Downloading the raw HTML code of the business website
     const response = await axios.get(targetUrl, { 
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
       timeout: 6000 // If website doesn't load in 6 seconds, cancel it
     });
     const html = response.data;
 
-    // 2. Load the HTML into Cheerio so we can search through it like text
     const $ = cheerio.load(html);
 
-    // 3. Inspect the code for clues across our 5 pillars
+    // 3. Inspecting the code for clues across our 5 pillars
     const report = {
       measurement: {
         pass: html.includes('gtag') || html.includes('google-analytics'),
@@ -77,7 +76,7 @@ app.post('/api/scan', async (req, res) => {
   }
 });
 
-// ROUTE 3: Save a Captured Email Lead
+// ROUTE 3: Saving a Captured Email Lead
 app.post('/api/save-lead', async (req, res) => {
   try {
     const newLead = new Lead({
