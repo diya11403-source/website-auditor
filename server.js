@@ -22,8 +22,8 @@ mongoose.connect(mongoURI)
 const transporter = nodemailer.createTransport({
   service: 'gmail', 
   auth: {
-    user: 'YOUR_EMAIL@gmail.com', 
-    pass: 'YOUR_GMAIL_APP_PASSWORD' 
+    user: process.env.EMAIL_USER, // Automatically reads from Render settings
+    pass: process.env.EMAIL_PASS  // Automatically reads from Render settings
   }
 });
 
