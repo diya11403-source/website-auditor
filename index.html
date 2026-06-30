@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "The Website Auditor Tool",
+  "description": "Scan any business URL against critical 2026 AI search optimization and web conversion pillars.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "All"
+ }
+</script>
     <meta charset="UTF-8">
     <title>The Website Auditor Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -83,16 +93,57 @@
             }
         }
 
-        async function unlockDashboard() {
-            const userEmail = document.getElementById('leadEmail').value;
-            if(!userEmail.includes('@')) return alert('Please input a valid email address.');
+       async function unlockDashboard() {
+    const userEmail = document.getElementById('leadEmail').value;
+    if(!userEmail.includes('@')) return alert('Please input a valid email address.');
 
-            // Send captured email data to server -> saves to MongoDB
-            await fetch(`${API_URL}/api/save-lead`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: userEmail, scannedUrl: verifiedScannedUrl })
-            });
+    // 1. UPDATE THE PAYLOAD HERE (Added reportData)
+    await fetch(`${API_URL}/api/save-lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            email: userEmail, 
+            scannedUrl: verifiedScannedUrl,
+            reportData: temporaryScanData // <-- This is the new addition
+        })
+    });
+
+    // Transition View: Hide Lead gate, display the interactive results panel
+    document.getElementById('lead-gate').classList.add('hidden');
+    document.getElementById('report-dashboard').classList.remove('hidden');
+
+    const loopContainer = document.getElementById('dashboard-results-list');
+    loopContainer.innerHTML = ''; // Reset container HTML
+
+    // This is the loop that creates the 5 pillar cards
+    for (const [pillarKey, auditValue] of Object.entries(temporaryScanData)) {
+        const passStatus = auditValue.pass;
+        loopContainer.innerHTML += `
+            <div class="p-5 rounded-lg bg-slate-800 border ${passStatus ? 'border-emerald-900/50 bg-emerald-950/10' : 'border-rose-900/50 bg-rose-950/10'}">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-bold capitalize text-slate-200">${pillarKey}</span>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-black ${passStatus ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+                        ${passStatus ? 'PASSED' : 'MISSING'}
+                    </span>
+                </div>
+                ${!passStatus ? `<p class="text-sm text-slate-400 mt-1 leading-relaxed">${auditValue.advice}</p>` : `<p class="text-sm text-emerald-500/80">Optimization verified. Site satisfies this digital metric framework.</p>`}
+            </div>
+        `;
+    } // <-- THE LOOP CLOSES HERE
+
+    // 2. PASTE THE WHATSAPP CTA BUTTON DIRECTLY BELOW THE CLOSED LOOP:
+    loopContainer.innerHTML += `
+        <div class="mt-8 p-6 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-center">
+            <h3 class="text-xl font-bold text-emerald-400 mb-2">Want us to fix these gaps for you?</h3>
+            <p class="text-slate-400 text-sm mb-4">A copy of this report card has been sent to your inbox. Let's get your business completely optimized for 2026 AI Search.</p>
+            <a href="https://wa.me/YOUR_PHONE_NUMBER?text=Hi! I just ran an audit on my site ${verifiedScannedUrl} and I'd love some help fixing my missing conversion and AI Search frameworks." 
+               target="_blank" 
+               class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-lg transition-all shadow-lg">
+               💬 Chat with an Expert on WhatsApp
+            </a>
+        </div>
+    `;
+}
 
             // Transition View: Hide Lead gate, display the interactive results panel
             document.getElementById('lead-gate').classList.add('hidden');
