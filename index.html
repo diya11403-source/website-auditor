@@ -76,7 +76,6 @@
         let temporaryScanData = null;
         let verifiedScannedUrl = '';
 
-        // PART B TRACKING: Fires automatically the millisecond a user lands on your site
         window.addEventListener('DOMContentLoaded', () => {
             fetch(`${API_URL}/api/track-visit`, {
                 method: 'POST',
@@ -104,7 +103,7 @@
 
                 if(data.success) {
                     temporaryScanData = data.report;
-                    // Transition View: Hide input window, show email lead wall
+            
                     document.getElementById('input-card').classList.add('hidden');
                     document.getElementById('lead-gate').classList.remove('hidden');
                 } else {
@@ -120,14 +119,12 @@
     const userEmail = document.getElementById('leadEmail').value;
     if(!userEmail.includes('@')) return alert('Please input a valid email address.');
 
-    // Transition View IMMEDIATELY so the user isn't stuck looking at a broken button
     document.getElementById('lead-gate').classList.add('hidden');
     document.getElementById('report-dashboard').classList.remove('hidden');
 
     const loopContainer = document.getElementById('dashboard-results-list');
-    loopContainer.innerHTML = ''; // Reset container HTML
+    loopContainer.innerHTML = ''; 
 
-    // Render the 5 pillars loop immediately
     for (const [pillarKey, auditValue] of Object.entries(temporaryScanData)) {
         const passStatus = auditValue.pass;
         loopContainer.innerHTML += `
@@ -143,7 +140,6 @@
         `;
     }
 
-    // Append the fixed WhatsApp CTA Button
     loopContainer.innerHTML += `
         <div class="mt-8 p-6 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-center">
             <h3 class="text-xl font-bold text-emerald-400 mb-2">Want us to fix these gaps for you?</h3>
@@ -156,7 +152,6 @@
         </div>
     `;
 
-    // Try to save the lead and send the email quietly in the background
     try {
         const response = await fetch(`${API_URL}/api/save-lead`, {
             method: 'POST',
