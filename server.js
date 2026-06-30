@@ -9,7 +9,7 @@ const Visit = require('./models/Visit');
 const Lead = require('./models/Lead');
 
 const app = express();
-app.use(express.json()); // Allows our server to read JSON data sent by the frontend
+app.use(express.json()); // Allows server to read JSON data sent by the frontend
 app.use(cors());         // Stops browser from blocking requests to this server
 
 // Connecting to cloud MongoDB database
@@ -17,8 +17,6 @@ const mongoURI = "mongodb+srv://admin:Diya11403@cluster0.jr7odeo.mongodb.net/?ap
 mongoose.connect(mongoURI)
   .then(() => console.log('🚀 Success: Connected to MongoDB Cloud!'))
   .catch(err => console.error('❌ Database connection error:', err));
-
-// NOTE: Nodemailer transporter setup removed completely since n8n handles delivery now!
 
 // Tracking Traffic to our tool
 app.post('/api/track-visit', async (req, res) => {
@@ -34,7 +32,7 @@ app.post('/api/track-visit', async (req, res) => {
   }
 });
 
-// ROUTE 2: Scraping and Analyzing a Business Website
+//  Scraping and Analyzing a Business Website
 app.post('/api/scan', async (req, res) => {
   try {
     const { targetUrl } = req.body;
@@ -42,7 +40,7 @@ app.post('/api/scan', async (req, res) => {
     // 1. Downloading the raw HTML code of the business website
     const response = await axios.get(targetUrl, { 
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      timeout: 6000 // If website doesn't load in 6 seconds, cancel it
+      timeout: 6000 
     });
     const html = response.data;
 
@@ -78,7 +76,7 @@ app.post('/api/scan', async (req, res) => {
   }
 });
 
-// ROUTE 3: Saving a Captured Email Lead & Forwarding data to n8n
+// Saving a Captured Email Lead & Forwarding data to n8n
 app.post('/api/save-lead', async (req, res) => {
   try {
     const { email, scannedUrl, reportData } = req.body;
@@ -87,8 +85,6 @@ app.post('/api/save-lead', async (req, res) => {
     const newLead = new Lead({ email, scannedUrl });
     await newLead.save(); 
 
-    // 2. FORWARD EVERYTHING TO n8n (Bypasses email blockades smoothly)
-    // ⚠️ REPLACE THE URL BELOW WITH YOUR ACTUAL PRODUCTION WEBHOOK URL FROM n8n
     await axios.post('https://ushribiswas.app.n8n.cloud/webhook/save-lead', {
       email,
       scannedUrl,
@@ -102,6 +98,6 @@ app.post('/api/save-lead', async (req, res) => {
   }
 });
 
-// Start the server engine on local port 5000
+// Starting the server engine on local port 5000
 const PORT = 5000;
 app.listen(PORT, () => console.log(`🔥 Scanner engine live on http://localhost:${PORT}`));
