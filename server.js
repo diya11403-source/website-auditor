@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
 
 // Import the database blueprints 
 const Visit = require('./models/Visit');
@@ -17,6 +18,14 @@ const mongoURI = "mongodb+srv://admin:Diya11403@cluster0.jr7odeo.mongodb.net/?ap
 mongoose.connect(mongoURI)
   .then(() => console.log('🚀 Success: Connected to MongoDB Cloud!'))
   .catch(err => console.error('❌ Database connection error:', err));
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail', 
+  auth: {
+    user: 'YOUR_EMAIL@gmail.com', 
+    pass: 'YOUR_GMAIL_APP_PASSWORD' 
+  }
+});
 
 // Tracking Traffic to our tool
 app.post('/api/track-visit', async (req, res) => {
