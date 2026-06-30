@@ -1,0 +1,2 @@
+# The Website Auditor Tool
+An executive evaluation engine designed to scan modern digital properties for standard semantic structural protocols, tracking tags, and conversion pipelines.
