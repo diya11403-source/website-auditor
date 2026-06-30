@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
 
 // Import the database blueprints 
 const Visit = require('./models/Visit');
@@ -19,13 +18,7 @@ mongoose.connect(mongoURI)
   .then(() => console.log('🚀 Success: Connected to MongoDB Cloud!'))
   .catch(err => console.error('❌ Database connection error:', err));
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail', // Let Nodemailer handle the ports behind the scenes
-  auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS  
-  }
-});
+// NOTE: Nodemailer transporter setup removed completely since n8n handles delivery now!
 
 // Tracking Traffic to our tool
 app.post('/api/track-visit', async (req, res) => {
@@ -85,61 +78,27 @@ app.post('/api/scan', async (req, res) => {
   }
 });
 
-// ROUTE 3: Saving a Captured Email Lead & Delivering Automated Email Report
+// ROUTE 3: Saving a Captured Email Lead & Forwarding data to n8n
 app.post('/api/save-lead', async (req, res) => {
   try {
-    // We extract reportData along with email and scannedUrl here
     const { email, scannedUrl, reportData } = req.body;
 
     // 1. Saves email link straight into MongoDB
     const newLead = new Lead({ email, scannedUrl });
     await newLead.save(); 
 
-    // 2. Format the 5-pillar results into clean HTML elements for the email body
-    let reportSummaryHtml = '';
-    if (reportData) {
-      for (const [pillar, data] of Object.entries(reportData)) {
-        const status = data.pass ? '✅ PASSED' : '❌ MISSING';
-        const color = data.pass ? '#10b981' : '#f43f5e';
-        reportSummaryHtml += `
-          <div style="margin-bottom: 15px; padding: 12px; border-left: 4px solid ${color}; background-color: #f8fafc; font-family: sans-serif;">
-            <strong style="text-transform: capitalize; font-size: 16px;">${pillar}</strong>: 
-            <span style="color: ${color}; font-weight: bold;">${status}</span>
-            ${!data.pass ? `<p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">${data.advice}</p>` : ''}
-          </div>
-        `;
-      }
-    } else {
-      reportSummaryHtml = '<p>Audit data was unavailable, but your scan session was recorded successfully.</p>';
-    }
+    // 2. FORWARD EVERYTHING TO n8n (Bypasses email blockades smoothly)
+    // ⚠️ REPLACE THE URL BELOW WITH YOUR ACTUAL PRODUCTION WEBHOOK URL FROM n8n
+    await axios.post('https://ushribiswas.app.n8n.cloud/webhook/save-lead', {
+      email,
+      scannedUrl,
+      reportData
+    });
 
-    // 3. Draft the email configurations using the environment user address
-    const mailOptions = {
-      from: `"The Website Auditor" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: `Your Website Audit Results for ${scannedUrl}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; color: #334155; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #1e1b4b;">Your 5-Pillar Executive Summary</h2>
-          <p>Thank you for auditing your site. Here is what we found for <strong>${scannedUrl}</strong>:</p>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          
-          ${reportSummaryHtml}
-          
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p><strong>Want us to fix these gaps for you?</strong> Let's scale your traffic across the USA, UK, UAE, and Australia.</p>
-          <a href="https://wa.me/919836594201" style="background-color: #25D366; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Chat with us on WhatsApp</a>
-        </div>
-      `
-    };
-
-    // 4. Fire off the email report to the lead
-    await transporter.sendMail(mailOptions);
-
-    res.status(201).json({ success: true, message: 'Lead recorded and email report sent successfully!' });
+    res.status(201).json({ success: true, message: 'Lead recorded and forwarded to n8n workflow!' });
   } catch (err) {
-    console.error("Error in /api/save-lead:", err);
-    res.status(500).json({ error: 'Database saving or email delivery failure' });
+    console.error("Error in /api/save-lead webhook pipeline:", err);
+    res.status(500).json({ error: 'Database saving or automation forward failure' });
   }
 });
 
