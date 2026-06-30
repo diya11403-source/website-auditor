@@ -89,7 +89,7 @@ app.post('/api/save-lead', async (req, res) => {
 
     // 2. FORWARD EVERYTHING TO n8n (Bypasses email blockades smoothly)
     // ⚠️ REPLACE THE URL BELOW WITH YOUR ACTUAL PRODUCTION WEBHOOK URL FROM n8n
-    await axios.post('https://ushribiswas.app.n8n.cloud/webhook-test/save-lead', {
+    await axios.post('https://ushribiswas.app.n8n.cloud/webhook/save-lead', {
       email,
       scannedUrl,
       reportData
