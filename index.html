@@ -95,56 +95,64 @@
         }
 
         async function unlockDashboard() {
-            const userEmail = document.getElementById('leadEmail').value;
-            if(!userEmail.includes('@')) return alert('Please input a valid email address.');
+    const userEmail = document.getElementById('leadEmail').value;
+    if(!userEmail.includes('@')) return alert('Please input a valid email address.');
 
-            // 1. Send data to server (Saves lead and triggers automated email report)
-            await fetch(`${API_URL}/api/save-lead`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    email: userEmail, 
-                    scannedUrl: verifiedScannedUrl,
-                    reportData: temporaryScanData 
-                })
-            });
+    // Transition View IMMEDIATELY so the user isn't stuck looking at a broken button
+    document.getElementById('lead-gate').classList.add('hidden');
+    document.getElementById('report-dashboard').classList.remove('hidden');
 
-            // Transition View: Hide Lead gate, display the interactive results panel
-            document.getElementById('lead-gate').classList.add('hidden');
-            document.getElementById('report-dashboard').classList.remove('hidden');
+    const loopContainer = document.getElementById('dashboard-results-list');
+    loopContainer.innerHTML = ''; // Reset container HTML
 
-            const loopContainer = document.getElementById('dashboard-results-list');
-            loopContainer.innerHTML = ''; // Reset container HTML
-
-            // This is the loop that creates the 5 pillar cards
-            for (const [pillarKey, auditValue] of Object.entries(temporaryScanData)) {
-                const passStatus = auditValue.pass;
-                loopContainer.innerHTML += `
-                    <div class="p-5 rounded-lg bg-slate-800 border ${passStatus ? 'border-emerald-900/50 bg-emerald-950/10' : 'border-rose-900/50 bg-rose-950/10'}">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-lg font-bold capitalize text-slate-200">${pillarKey}</span>
-                            <span class="px-2.5 py-1 rounded-full text-xs font-black ${passStatus ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
-                                ${passStatus ? 'PASSED' : 'MISSING'}
-                            </span>
-                        </div>
-                        ${!passStatus ? `<p class="text-sm text-slate-400 mt-1 leading-relaxed">${auditValue.advice}</p>` : `<p class="text-sm text-emerald-500/80">Optimization verified. Site satisfies this digital metric framework.</p>`}
-                    </div>
-                `;
-            }
-
-            // 2. Append the fixed WhatsApp CTA Button right under the dashboard elements
-            loopContainer.innerHTML += `
-                <div class="mt-8 p-6 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-center">
-                    <h3 class="text-xl font-bold text-emerald-400 mb-2">Want us to fix these gaps for you?</h3>
-                    <p class="text-slate-400 text-sm mb-4">A copy of this report card has been sent to your inbox. Let's get your business completely optimized for 2026 AI Search.</p>
-                    <a href="https://wa.me/+91 9836594201?text=Hi! I just ran an audit on my site ${verifiedScannedUrl} and I'd love some help fixing my missing conversion and AI Search frameworks." 
-                       target="_blank" 
-                       class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-lg transition-all shadow-lg">
-                       💬 Chat with an Expert on WhatsApp
-                    </a>
+    // Render the 5 pillars loop immediately
+    for (const [pillarKey, auditValue] of Object.entries(temporaryScanData)) {
+        const passStatus = auditValue.pass;
+        loopContainer.innerHTML += `
+            <div class="p-5 rounded-lg bg-slate-800 border ${passStatus ? 'border-emerald-900/50 bg-emerald-950/10' : 'border-rose-900/50 bg-rose-950/10'}">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-bold capitalize text-slate-200">${pillarKey}</span>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-black ${passStatus ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+                        ${passStatus ? 'PASSED' : 'MISSING'}
+                    </span>
                 </div>
-            `;
-        } // The function closes perfectly here, with no duplicate trailing garbage code
+                ${!passStatus ? `<p class="text-sm text-slate-400 mt-1 leading-relaxed">${auditValue.advice}</p>` : `<p class="text-sm text-emerald-500/80">Optimization verified. Site satisfies this digital metric framework.</p>`}
+            </div>
+        `;
+    }
+
+    // Append the fixed WhatsApp CTA Button
+    loopContainer.innerHTML += `
+        <div class="mt-8 p-6 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-center">
+            <h3 class="text-xl font-bold text-emerald-400 mb-2">Want us to fix these gaps for you?</h3>
+            <p class="text-slate-400 text-sm mb-4">A copy of this report card has been sent to your inbox. Let's get your business completely optimized for 2026 AI Search.</p>
+            <a href="https://wa.me/919836594201?text=Hi! I just ran an audit on my site ${verifiedScannedUrl} and I'd love some help fixing my missing conversion and AI Search frameworks." 
+               target="_blank" 
+               class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-lg transition-all shadow-lg">
+               💬 Chat with an Expert on WhatsApp
+            </a>
+        </div>
+    `;
+
+    // Try to save the lead and send the email quietly in the background
+    try {
+        const response = await fetch(`${API_URL}/api/save-lead`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: userEmail, 
+                scannedUrl: verifiedScannedUrl,
+                reportData: temporaryScanData 
+            })
+        });
+        const data = await response.json();
+        if(!data.success) {
+            console.warn("Backend saved lead but failed email:", data.error);
+        }
+    } catch (netError) {
+        console.error("Network error saving lead:", netError);
+    }
+}
     
     </script>
 </body>
