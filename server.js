@@ -20,13 +20,14 @@ mongoose.connect(mongoURI)
   .catch(err => console.error('❌ Database connection error:', err));
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail', 
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // true for port 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER, // Automatically reads from Render settings
-    pass: process.env.EMAIL_PASS  // Automatically reads from Render settings
+    user: process.env.EMAIL_USER, 
+    pass: process.env.EMAIL_PASS  
   }
 });
-
 // Tracking Traffic to our tool
 app.post('/api/track-visit', async (req, res) => {
   try {
