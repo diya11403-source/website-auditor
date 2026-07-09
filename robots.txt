@@ -1,0 +1,5 @@
+User-agent: *
+
+Allow: /
+
+Sitemap: https://diya11403-source.github.io/website-auditor/sitemap.xml
